@@ -1,0 +1,159 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+model contributions {
+  contribution_id   Int            @id(map: "PK__contribu__018774BEF4BAD126") @default(autoincrement())
+  user_id           Int
+  group_id          Int
+  amount            Decimal        @db.Decimal(15, 2)
+  contribution_date DateTime?      @default(now(), map: "DF__contribut__contr__04E4BC85") @db.DateTime
+  status            String?        @default("pending", map: "DF__contribut__statu__05D8E0BE") @db.NVarChar(20)
+  stokvel_groups    stokvel_groups @relation(fields: [group_id], references: [group_id], onUpdate: NoAction, map: "FK__contribut__group__07C12930")
+  users             users          @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "FK__contribut__user___06CD04F7")
+  payments          payments[]
+}
+
+model group_members {
+  member_id      Int            @id(map: "PK__group_me__B29B8534B2604915") @default(autoincrement())
+  user_id        Int
+  group_id       Int
+  role_id        Int
+  join_date      DateTime?      @default(now(), map: "DF__group_mem__join___7F2BE32F") @db.DateTime
+  stokvel_groups stokvel_groups @relation(fields: [group_id], references: [group_id], onUpdate: NoAction, map: "FK__group_mem__group__01142BA1")
+  roles          roles          @relation(fields: [role_id], references: [role_id], onUpdate: NoAction, map: "FK__group_mem__role___02084FDA")
+  users          users          @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "FK__group_mem__user___00200768")
+  payouts        payouts[]
+
+  @@unique([user_id, group_id], map: "UQ_user_group")
+}
+
+model meetings {
+  meeting_id     Int            @id(map: "PK__meetings__C7B91CAB562AF4D0") @default(autoincrement())
+  group_id       Int
+  scheduled_by   Int
+  meeting_date   DateTime       @db.DateTime
+  agenda         String         @db.NVarChar(255)
+  minutes        String?        @db.NVarChar(Max)
+  created_at     DateTime?      @default(now(), map: "DF__meetings__create__0A9D95DB") @db.DateTime
+  stokvel_groups stokvel_groups @relation(fields: [group_id], references: [group_id], onUpdate: NoAction, map: "FK__meetings__group___0B91BA14")
+  users          users          @relation(fields: [scheduled_by], references: [user_id], onUpdate: NoAction, map: "FK__meetings__schedu__0C85DE4D")
+}
+
+model notifications {
+  notification_id Int            @id(map: "PK__notifica__E059842F43F08CA3") @default(autoincrement())
+  user_id         Int
+  group_id        Int
+  type            String         @db.NVarChar(50)
+  message         String         @db.NVarChar(255)
+  status          String?        @default("unread", map: "DF__notificat__statu__0F624AF8") @db.NVarChar(20)
+  created_at      DateTime?      @default(now(), map: "DF__notificat__creat__10566F31") @db.DateTime
+  stokvel_groups  stokvel_groups @relation(fields: [group_id], references: [group_id], onUpdate: NoAction, map: "FK__notificat__group__123EB7A3")
+  users           users          @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "FK__notificat__user___114A936A")
+}
+
+model roles {
+  role_id       Int             @id(map: "PK__roles__760965CC9F8F5DFC") @default(autoincrement())
+  role_name     String          @unique(map: "UQ__roles__783254B1EFC7F60F") @db.NVarChar(50)
+  group_members group_members[]
+}
+
+model sa_rates {
+  rate_id    Int       @id(map: "PK__sa_rates__75920B42475B76E7") @default(autoincrement())
+  rate_type  String    @db.NVarChar(20)
+  rate       Decimal   @db.Decimal(5, 2)
+  updated_at DateTime? @default(now(), map: "DF__sa_rates__update__151B244E") @db.DateTime
+}
+
+model stokvel_groups {
+  group_id            Int             @id(map: "PK__stokvel___D57795A07CCF2BA1") @default(autoincrement())
+  group_name          String          @db.NVarChar(255)
+  contribution_amount Decimal         @db.Decimal(15, 2)
+  payout_frequency    String          @db.NVarChar(20)
+  created_by          Int
+  created_at          DateTime?       @default(now(), map: "DF__stokvel_g__creat__7A672E12") @db.DateTime
+  contributions       contributions[]
+  group_members       group_members[]
+  invitations         invitations[]
+  meetings            meetings[]
+  notifications       notifications[]
+  payouts             payouts[]
+  users               users           @relation(fields: [created_by], references: [user_id], onUpdate: NoAction, map: "FK__stokvel_g__creat__7B5B524B")
+}
+
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B610809F1D9") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
+}
+
+model test_table {
+  id   Int     @id(map: "PK__test_tab__3213E83FEEE7C254") @default(autoincrement())
+  name String? @db.NVarChar(100)
+}
+
+model users {
+  user_id          Int              @id(map: "PK__users__B9BE370FB398CB38") @default(autoincrement())
+  external_auth_id String           @unique(map: "UQ__users__0D9285152C5FA44B") @db.NVarChar(255)
+  first_name       String           @db.NVarChar(100)
+  surname          String           @db.NVarChar(100)
+  email            String           @unique(map: "UQ__users__AB6E61648B58EC70") @db.NVarChar(255)
+  phone_number     String           @db.NVarChar(15)
+  created_at       DateTime?        @default(now(), map: "DF__users__created_a__76969D2E") @db.DateTime
+  contributions    contributions[]
+  group_members    group_members[]
+  invitations      invitations[]
+  meetings         meetings[]
+  notifications    notifications[]
+  payments         payments[]
+  stokvel_groups   stokvel_groups[]
+}
+
+model invitations {
+  invitation_id  Int            @id(map: "PK__invitati__94B74D7CE28ABCC6") @default(autoincrement())
+  group_id       Int
+  invited_by     Int
+  email          String         @db.VarChar(255)
+  token          String         @unique(map: "UQ__invitati__CA90DA7A3590DFB4") @db.VarChar(255)
+  status         String         @default("pending", map: "DF__invitatio__statu__2CF2ADDF") @db.VarChar(20)
+  created_at     DateTime       @default(now(), map: "DF__invitatio__creat__2EDAF651") @db.DateTime
+  expires_at     DateTime       @db.DateTime
+  stokvel_groups stokvel_groups @relation(fields: [group_id], references: [group_id], onUpdate: NoAction, map: "fk_invite_group")
+  users          users          @relation(fields: [invited_by], references: [user_id], onUpdate: NoAction, map: "fk_invite_sender")
+}
+
+model payments {
+  payment_id      Int           @id(map: "PK__payments__ED1FC9EA8E1FF662") @default(autoincrement())
+  contribution_id Int
+  user_id         Int
+  yoco_ref        String?       @db.VarChar(255)
+  amount          Decimal       @db.Decimal(15, 2)
+  status          String        @default("pending", map: "DF__payments__status__339FAB6E") @db.VarChar(20)
+  created_at      DateTime      @default(now(), map: "DF__payments__create__3587F3E0") @db.DateTime
+  updated_at      DateTime      @default(now(), map: "DF__payments__update__367C1819") @db.DateTime
+  contributions   contributions @relation(fields: [contribution_id], references: [contribution_id], onUpdate: NoAction, map: "fk_payment_contribution")
+  users           users         @relation(fields: [user_id], references: [user_id], onUpdate: NoAction, map: "fk_payment_user")
+}
+
+model payouts {
+  payout_id      Int            @id(map: "PK__payouts__3B0771ECA9EAD536") @default(autoincrement())
+  group_id       Int
+  member_id      Int
+  amount         Decimal        @db.Decimal(15, 2)
+  payout_order   Int
+  status         String         @default("scheduled", map: "DF__payouts__status__3B40CD36") @db.VarChar(20)
+  payout_date    DateTime       @db.DateTime
+  processed_at   DateTime?      @db.DateTime
+  created_at     DateTime       @default(now(), map: "DF__payouts__created__3D2915A8") @db.DateTime
+  stokvel_groups stokvel_groups @relation(fields: [group_id], references: [group_id], onUpdate: NoAction, map: "fk_payout_group")
+  group_members  group_members  @relation(fields: [member_id], references: [member_id], onUpdate: NoAction, map: "fk_payout_member")
+}
