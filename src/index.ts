@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import groupRoutes from './routes/groupRoutes';
-
+import contributionRoutes from './routes/contributionRoutes';
 dotenv.config();
 
 const app = express();
@@ -12,6 +12,9 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/groups', groupRoutes);
+
+app.use('/api/contributions',contributionRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

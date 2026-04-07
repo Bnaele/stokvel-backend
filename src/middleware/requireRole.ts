@@ -75,3 +75,45 @@ export const requireGroupRole = (roleName: string) => {
     }
   };
 };
+
+
+export const requireGlobalAdmin = () => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authenticatedUser = (req as any).authenticatedUser;
+      
+      if (!authenticatedUser) {
+        res.status(401).json({ error: 'Unauthorised. User not authenticated.' });
+        return;
+      }
+      
+      
+      const adminMembership = await prisma.group_members.findFirst({
+        where: {
+          user_id: authenticatedUser.user_id,
+          roles: {
+            role_name: 'Admin'
+          }
+        },
+        include: {
+          roles: true
+        }
+      });
+      
+      if (!adminMembership) {
+        res.status(403).json({ 
+          error: 'Forbidden. Only users with Admin role can create groups.' 
+        });
+        return;
+      }
+      
+      
+      (req as any).adminMembership = adminMembership;
+      next();
+      
+    } catch (error) {
+      console.error('Global admin check error:', error);
+      res.status(500).json({ error: 'Internal server error.' });
+    }
+  };
+};
