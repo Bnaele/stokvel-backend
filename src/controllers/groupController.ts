@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 
-export const createGroup = async (req: Request, res: Response) => {
+
+
+
+    export const createGroup = async (req: Request, res: Response) => {
   try {
     const { group_name, contribution_amount, payout_frequency } = req.body;
     const authenticatedUser = (req as any).authenticatedUser;
@@ -26,20 +29,33 @@ export const createGroup = async (req: Request, res: Response) => {
       },
     });
 
-    // Automatically add the creator as an Admin member of the group
-    const adminRole = await prisma.roles.findFirst({
+    // Get or create Admin role
+    let adminRole = await prisma.roles.findFirst({
       where: { role_name: 'Admin' },
     });
 
-    if (adminRole) {
-      await prisma.group_members.create({
-        data: {
-          user_id: authenticatedUser.user_id,
-          group_id: group.group_id,
-          role_id: adminRole.role_id,
-        },
+    if (!adminRole) {
+      // Create Admin role if it doesn't exist
+      adminRole = await prisma.roles.create({
+        data: { role_name: 'Admin' },
       });
     }
+
+    // Add creator as Admin member of the group
+    await prisma.group_members.upsert({
+      where: {
+        user_id_group_id: {
+          user_id: authenticatedUser.user_id,
+          group_id: group.group_id,
+        },
+      },
+      update: { role_id: adminRole.role_id },
+      create: {
+        user_id: authenticatedUser.user_id,
+        group_id: group.group_id,
+        role_id: adminRole.role_id,
+      },
+    });
 
     res.status(201).json({
       message: 'Stokvel group created successfully.',
@@ -47,9 +63,12 @@ export const createGroup = async (req: Request, res: Response) => {
     });
 
   } catch (error) {
+    console.error('Create group error:', error);
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
+
+    
 
 export const getGroups = async (req: Request, res: Response) => {
   try {

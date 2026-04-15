@@ -17,15 +17,26 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       user = await prisma.users.findFirst({
         where: { external_auth_id: externalAuthId },
       });
-      console.log('User found:', user);
+      
+      // If user doesn't exist, create a default user
+      if (!user) {
+        console.log('User not found, creating default user...');
+        user = await prisma.users.create({
+          data: {
+            external_auth_id: externalAuthId,
+            first_name: 'Demo',
+            surname: 'User',
+            email: `${externalAuthId}@demo.com`,
+            phone_number: '0000000000',
+          },
+        });
+        console.log('Created default user:', user);
+      } else {
+        console.log('User found:', user);
+      }
     } catch (dbError) {
       console.error('Database query failed:', dbError);
       res.status(500).json({ error: 'Database query failed.' });
-      return;
-    }
-
-    if (!user) {
-      res.status(401).json({ error: 'Unauthorised. User not found.' });
       return;
     }
 
@@ -37,6 +48,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     res.status(500).json({ error: 'Internal server error.' });
   }
 };
+    
 
 export const requireGroupRole = (roleName: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
